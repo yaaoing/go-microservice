@@ -3,15 +3,18 @@ package registry
 import (
 	"fmt"
 	consulapi "github.com/hashicorp/consul/api"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
+	"time"
 )
+
+var log = logrus.New()
 
 func RegistryServer() {
 	config := consulapi.DefaultConfig()
 	client, err := consulapi.NewClient(config)
 
 	if err != nil {
-		log.Fatal("consul client error : ", err)
+		log.Error("consul client error : ", err)
 	}
 
 	checkPort := 8080
@@ -32,6 +35,32 @@ func RegistryServer() {
 	err = client.Agent().ServiceRegister(registration)
 
 	if err != nil {
-		log.Fatal("registry server error : ", err)
+		log.Error("registry server error : ", err)
 	}
+
+	go func() {
+		for true {
+			time.Sleep(10 * time.Second)
+			_, _, err := client.Agent().AgentHealthServiceByID("account-service")
+			if err != nil {
+				log.Info("do registry again")
+				if reconnect(client, registration) != nil {
+					log.Fatal("cannot registry")
+				}
+			}
+		}
+	}()
+}
+
+func reconnect(client *consulapi.Client, registration *consulapi.AgentServiceRegistration) error {
+	var err error
+	for i := 0; i < 5; i++ {
+		err = client.Agent().ServiceRegister(registration)
+
+		if err != nil {
+			log.Error("registry server error : ", err)
+			time.Sleep(10 * time.Second)
+		}
+	}
+	return err
 }
