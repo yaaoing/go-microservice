@@ -1,32 +1,34 @@
-package registry
+package main
 
 import (
 	"fmt"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/sirupsen/logrus"
+	"net"
+	"strconv"
 	"time"
 )
 
 var log = logrus.New()
 
-type ConsulClient struct {
-}
+var client = new(consulapi.Client)
 
-func (c ConsulClient) RegistryServer() {
+func RegistryServer() {
 	config := consulapi.DefaultConfig()
-	client, err := consulapi.NewClient(config)
+	var err error
+	client, err = consulapi.NewClient(config)
 
 	if err != nil {
 		log.Error("consul client error : ", err)
 	}
 
-	checkPort := 8080
+	checkPort := 8081
 
 	registration := new(consulapi.AgentServiceRegistration)
-	registration.ID = "account-service"
-	registration.Name = "account-service"
-	registration.Port = 8080
-	registration.Tags = []string{"account-service"}
+	registration.ID = "product-service"
+	registration.Name = "product-service"
+	registration.Port = 8081
+	registration.Tags = []string{"product-service"}
 	registration.Address = "127.0.0.1"
 	registration.Check = &consulapi.AgentServiceCheck{
 		HTTP:                           fmt.Sprintf("http://%s:%d%s", registration.Address, checkPort, "/check"),
@@ -66,4 +68,25 @@ func reconnect(client *consulapi.Client, registration *consulapi.AgentServiceReg
 		}
 	}
 	return err
+}
+
+func GetClient() consulapi.Client {
+	return *client
+}
+
+func main() {
+	RegistryServer()
+	client := GetClient()
+	services, _, err := client.Health().Service("account-service", "", true, &consulapi.QueryOptions{})
+	if err != nil {
+		log.Warn("error retrieving instances from Consul: %v", err)
+	}
+	addrs := make(map[string]string)
+	for _, service := range services {
+		addrs[net.JoinHostPort(service.Service.Address, strconv.Itoa(service.Service.Port))] = net.JoinHostPort(service.Service.Address, strconv.Itoa(service.Service.Port))
+	}
+
+	for address := range addrs {
+		log.Info(address)
+	}
 }
