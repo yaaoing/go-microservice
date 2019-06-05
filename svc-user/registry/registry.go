@@ -1,5 +1,7 @@
 package registry
 
-type IRegistry interface {
-	RegistryServer()
+type Registry interface {
+	Registry()
+	Close()
+	Reconnect()
 }

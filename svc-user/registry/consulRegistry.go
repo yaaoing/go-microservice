@@ -12,7 +12,7 @@ var log = logrus.New()
 type ConsulClient struct {
 }
 
-func (c ConsulClient) RegistryServer() {
+func (c ConsulClient) Registry() {
 	config := consulapi.DefaultConfig()
 	client, err := consulapi.NewClient(config)
 

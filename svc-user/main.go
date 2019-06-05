@@ -10,7 +10,7 @@ func main() {
 	defer db.DisConnect()
 
 	reg := new(registry.ZookeeperClient)
-	reg.RegistryServer()
+	reg.Registry()
 
 	router := router.InitRouter()
 	router.Run(":8080")
