@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
+	"leo/go-microservice/net-demo/protocol"
 	"net"
 )
 
@@ -19,18 +20,38 @@ func main() {
 			continue
 		}
 		logrus.Info("connected to client: ", conn.RemoteAddr())
-		handleConnection(conn)
+		go handleConnection(conn)
 	}
 }
 
 func handleConnection(conn net.Conn) {
-	buffer := make([]byte, 2048)
+	tmpBuffer := make([]byte, 0)
+
+	//readerChannel := make(chan []byte, 16)
+	//go reader(readerChannel)
+
+	buffer := make([]byte, 1024)
 	for {
 		n, err := conn.Read(buffer)
 		if err != nil {
-			logrus.Info("data read failed: ", err)
+			logrus.Info(err)
 			return
 		}
-		logrus.Info("receiving data: ", string(buffer[:n]))
+		tmpBuffer, err = protocol.Depack(append(tmpBuffer, buffer[:n]...))
+		//logrus.Info(string(buffer[:n]))
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		logrus.Info(string(tmpBuffer))
+	}
+	defer conn.Close()
+}
+
+func reader(readerChannel chan []byte) {
+	for {
+		select {
+		case data := <-readerChannel:
+			logrus.Info(string(data))
+		}
 	}
 }

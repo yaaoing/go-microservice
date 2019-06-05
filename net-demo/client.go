@@ -2,7 +2,10 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
+	"leo/go-microservice/net-demo/protocol"
 	"net"
+	"strconv"
+	"time"
 )
 
 func main() {
@@ -18,6 +21,24 @@ func main() {
 	}
 	logrus.Info("connect to server successful")
 
-	conn.Write([]byte("hello world!"))
+	send(conn)
+}
 
+func send(conn net.Conn) {
+	defer conn.Close()
+	for i := 0; i < 100; i++ {
+		session := getSession()
+		words := "{\"ID\":" + strconv.Itoa(i) + "\",\"Session\":" + session + "2015073109532345\",\"Meta\":\"golang\",\"Content\":\"message\"}"
+		data, err := protocol.Enpack([]byte(words))
+		if err != nil {
+			logrus.Info(err)
+		}
+		conn.Write(data)
+	}
+}
+
+func getSession() string {
+	gs1 := time.Now().Unix()
+	gs2 := strconv.FormatInt(gs1, 10)
+	return gs2
 }
