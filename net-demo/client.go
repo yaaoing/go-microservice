@@ -25,8 +25,13 @@ func main() {
 }
 
 func send(conn net.Conn) {
-	defer conn.Close()
-	for i := 0; i < 100; i++ {
+	tcpConn, ok := conn.(*net.TCPConn)
+	if !ok {
+		logrus.Fatal("con not convert net.Conn to net.TCPConn")
+	}
+	tcpConn.SetNoDelay(true)
+	defer tcpConn.Close()
+	for i := 0; i < 10; i++ {
 		session := getSession()
 		words := "{\"ID\":" + strconv.Itoa(i) + "\",\"Session\":" + session + "2015073109532345\",\"Meta\":\"golang\",\"Content\":\"message\"}"
 		data, err := protocol.Enpack([]byte(words))

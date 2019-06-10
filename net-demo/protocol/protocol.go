@@ -26,10 +26,11 @@ func Depack(buffer []byte) ([]byte, error) {
 	var i int
 	data := make([]byte, 32)
 	for i = 0; i < length; i++ {
+		// empty message
 		if length < i+HeaderLength+MessageLength {
 			break
 		}
-		// 头部消息
+		// header message
 		if string(buffer[i:i+HeaderLength]) == Header {
 			msgLength, err := BytesToInt(buffer[i+HeaderLength : i+HeaderLength+MessageLength])
 			if err != nil {
